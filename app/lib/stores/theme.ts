@@ -5,31 +5,19 @@ export type Theme = 'dark' | 'light';
 export const kTheme = 'bolt_theme';
 
 export function themeIsDark() {
-  return themeStore.get() === 'dark';
+  return true; // Always return true for dark theme
 }
 
-export const DEFAULT_THEME = 'light';
+// Change default theme to dark
+export const DEFAULT_THEME = 'dark';
 
-export const themeStore = atom<Theme>(initStore());
+export const themeStore = atom<Theme>(DEFAULT_THEME);
 
 function initStore() {
-  if (!import.meta.env.SSR) {
-    const persistedTheme = localStorage.getItem(kTheme) as Theme | undefined;
-    const themeAttribute = document.querySelector('html')?.getAttribute('data-theme');
-
-    return persistedTheme ?? (themeAttribute as Theme) ?? DEFAULT_THEME;
-  }
-
-  return DEFAULT_THEME;
+  return DEFAULT_THEME; // Always return dark theme
 }
 
 export function toggleTheme() {
-  const currentTheme = themeStore.get();
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-  themeStore.set(newTheme);
-
-  localStorage.setItem(kTheme, newTheme);
-
-  document.querySelector('html')?.setAttribute('data-theme', newTheme);
+  // Theme switching is disabled
+  return;
 }

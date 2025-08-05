@@ -1,0 +1,15 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "build/client",
+  "framework": "remix",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index.js"
+    }
+  ],
+  "env": {
+    "GOOGLE_GENERATIVE_AI_API_KEY": "AIzaSyC5DwxAteBFQ4VMkjMhU74Z-05op90uTJ8",
+    "VITE_DISABLE_PERSISTENCE": "true"
+  }
+} 

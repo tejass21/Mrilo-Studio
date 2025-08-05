@@ -283,12 +283,10 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         <div ref={scrollRef} className="flex flex-col lg:flex-row overflow-y-auto w-full h-full">
           <div className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full')}>
             {!chatStarted && (
-              <div id="intro" className="mt-[26vh] max-w-chat mx-auto text-center px-4 lg:px-0">
-                <h1 className="text-3xl lg:text-6xl font-bold text-bolt-elements-textPrimary mb-4 animate-fade-in">
-                  Where ideas begin
-                </h1>
+              <div id="intro" className="mt-[15vh] max-w-[1000px] mx-auto px-4 lg:px-0 text-center">
+                <h1 className="text-3xl lg:text-6xl font-bold text-purple-300 mb-4 animate-fade-in leading-none tracking-tight">Start building what matters</h1>
                 <p className="text-md lg:text-xl mb-8 text-bolt-elements-textSecondary animate-fade-in animation-delay-200">
-                  Bring ideas to life in seconds or get help on existing projects.
+                  Type it. Tweak it. Deploy it. Full-stack dev, streamlined.
                 </p>
               </div>
             )}
@@ -344,28 +342,30 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   <rect className={classNames(styles.PromptShine)} x="48" y="24" width="70" height="1"></rect>
                 </svg>
                 <div>
-                  <div className={isModelSettingsCollapsed ? 'hidden' : ''}>
+                  <div className="hidden">
                     <ModelSelector
                       key={provider?.name + ':' + modelList.length}
-                      model={model}
-                      setModel={setModel}
-                      modelList={modelList}
-                      provider={provider}
-                      setProvider={setProvider}
-                      providerList={providerList || PROVIDER_LIST}
-                      apiKeys={apiKeys}
+                      model="gemini-2.0-flash"
+                      setModel={() => {}}
+                      modelList={[]}
+                      provider={{
+                        name: 'Google',
+                        staticModels: [
+                          {
+                            name: 'gemini-2.0-flash',
+                            label: 'Gemini 2.0 Flash',
+                            provider: 'Google',
+                            maxTokenAllowed: 8192
+                          }
+                        ],
+                        getApiKeyLink: 'https://aistudio.google.com/app/apikey'
+                      }}
+                      setProvider={() => {}}
+                      providerList={[]}
+                      apiKeys={{
+                        'Google': 'AIzaSyC5DwxAteBFQ4VMkjMhU74Z-05op90uTJ8'
+                      }}
                     />
-                    {(providerList || []).length > 0 && provider && (
-                      <APIKeyManager
-                        provider={provider}
-                        apiKey={apiKeys[provider.name] || ''}
-                        setApiKey={(key) => {
-                          const newApiKeys = { ...apiKeys, [provider.name]: key };
-                          setApiKeys(newApiKeys);
-                          Cookies.set('apiKeys', JSON.stringify(newApiKeys));
-                        }}
-                      />
-                    )}
                   </div>
                 </div>
                 <FilePreview
@@ -443,7 +443,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                       minHeight: TEXTAREA_MIN_HEIGHT,
                       maxHeight: TEXTAREA_MAX_HEIGHT,
                     }}
-                    placeholder="How can Bolt help you today?"
+                    placeholder="How can Mrilo help you today?"
                     translate="no"
                   />
                   <ClientOnly>
@@ -504,17 +504,12 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                       {chatStarted && <ClientOnly>{() => <ExportChatButton exportChat={exportChat} />}</ClientOnly>}
                       <IconButton
                         title="Model Settings"
-                        className={classNames('transition-all flex items-center gap-1', {
-                          'bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent':
-                            isModelSettingsCollapsed,
-                          'bg-bolt-elements-item-backgroundDefault text-bolt-elements-item-contentDefault':
-                            !isModelSettingsCollapsed,
-                        })}
-                        onClick={() => setIsModelSettingsCollapsed(!isModelSettingsCollapsed)}
-                        disabled={!providerList || providerList.length === 0}
+                        className="hidden"
+                        onClick={() => {}}
+                        disabled={true}
                       >
-                        <div className={`i-ph:caret-${isModelSettingsCollapsed ? 'right' : 'down'} text-lg`} />
-                        {isModelSettingsCollapsed ? <span className="text-xs">{model}</span> : <span />}
+                        <div className="i-ph:caret-down text-lg" />
+                        <span />
                       </IconButton>
                     </div>
                     {input.length > 3 ? (

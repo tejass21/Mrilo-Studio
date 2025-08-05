@@ -5,7 +5,7 @@ import type { BoltAction } from '~/types/actions';
 import { createScopedLogger } from '~/utils/logger';
 import { unreachable } from '~/utils/unreachable';
 import type { ActionCallbackData } from './message-parser';
-import type { BoltShell } from '~/utils/shell';
+import type { MriloShell } from '~/utils/shell';
 
 const logger = createScopedLogger('ActionRunner');
 
@@ -37,11 +37,11 @@ type ActionsMap = MapStore<Record<string, ActionState>>;
 export class ActionRunner {
   #webcontainer: Promise<WebContainer>;
   #currentExecutionPromise: Promise<void> = Promise.resolve();
-  #shellTerminal: () => BoltShell;
+  #shellTerminal: () => MriloShell;
   runnerId = atom<string>(`${Date.now()}`);
   actions: ActionsMap = map({});
 
-  constructor(webcontainerPromise: Promise<WebContainer>, getShellTerminal: () => BoltShell) {
+  constructor(webcontainerPromise: Promise<WebContainer>, getShellTerminal: () => MriloShell) {
     this.#webcontainer = webcontainerPromise;
     this.#shellTerminal = getShellTerminal;
   }

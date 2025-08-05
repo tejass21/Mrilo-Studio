@@ -35,11 +35,20 @@ PROVIDER_LIST.forEach((provider) => {
   initialProviderSettings[provider.name] = {
     ...provider,
     settings: {
-      enabled: false,
+      enabled: provider.name === 'Google',
+      baseUrl: provider.name === 'Google' ? undefined : ''
     },
   };
 });
+
+// Lock settings to prevent changes
 export const providersStore = map<ProviderSetting>(initialProviderSettings);
+providersStore.subscribe(() => {
+  // Reset any changes back to initial settings
+  Object.keys(initialProviderSettings).forEach(key => {
+    providersStore.setKey(key, initialProviderSettings[key]);
+  });
+});
 
 export const isDebugMode = atom(false);
 

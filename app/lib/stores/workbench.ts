@@ -85,19 +85,21 @@ export class WorkbenchStore {
   get showTerminal() {
     return this.#terminalStore.showTerminal;
   }
-  get boltTerminal() {
-    return this.#terminalStore.boltTerminal;
+
+  get mriloTerminal() {
+    return this.#terminalStore.mriloTerminal;
   }
 
   toggleTerminal(value?: boolean) {
     this.#terminalStore.toggleTerminal(value);
   }
 
+  attachMriloTerminal(terminal: ITerminal) {
+    this.#terminalStore.attachMriloTerminal(terminal);
+  }
+
   attachTerminal(terminal: ITerminal) {
     this.#terminalStore.attachTerminal(terminal);
-  }
-  attachBoltTerminal(terminal: ITerminal) {
-    this.#terminalStore.attachBoltTerminal(terminal);
   }
 
   onTerminalResize(cols: number, rows: number) {
@@ -248,7 +250,7 @@ export class WorkbenchStore {
       title,
       closed: false,
       type,
-      runner: new ActionRunner(webcontainer, () => this.boltTerminal),
+      runner: new ActionRunner(webcontainer, () => this.mriloTerminal),
     });
   }
 

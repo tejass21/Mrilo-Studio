@@ -48,36 +48,60 @@ export async function getAll(db: IDBDatabase): Promise<ChatHistoryItem[]> {
 
 export async function setMessages(
   db: IDBDatabase,
-  id: string,
   messages: Message[],
+  id: string,
   urlId?: string,
-  description?: string,
-  timestamp?: string,
+  description?: string
 ): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction('chats', 'readwrite');
-    const store = transaction.objectStore('chats');
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Get existing chat data first, outside the transaction
+      let existingChat;
+      try {
+        existingChat = await getMessages(db, id);
+      } catch (e) {
+        // No existing chat found, which is fine for new chats
+      }
 
-    if (timestamp && isNaN(Date.parse(timestamp))) {
-      reject(new Error('Invalid timestamp'));
-      return;
+      // Get the urlId outside the transaction
+      const finalUrlId = urlId || await getUrlId(db, id);
+
+      // Now create the transaction and perform the put operation
+      const transaction = db.transaction('chats', 'readwrite');
+      const store = transaction.objectStore('chats');
+      
+      const chatData = {
+        id,
+        urlId: finalUrlId,
+        messages,
+        description: description || existingChat?.description || '',
+        timestamp: Date.now(),
+      };
+
+      // Perform the put operation
+      store.put(chatData);
+
+      // Handle transaction completion
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(new Error('Transaction was aborted'));
+    } catch (error) {
+      reject(error);
     }
-
-    const request = store.put({
-      id,
-      messages,
-      urlId,
-      description,
-      timestamp: timestamp ?? new Date().toISOString(),
-    });
-
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
   });
 }
 
 export async function getMessages(db: IDBDatabase, id: string): Promise<ChatHistoryItem> {
-  return (await getMessagesById(db, id)) || (await getMessagesByUrlId(db, id));
+  // First try by direct ID
+  try {
+    const result = await getMessagesById(db, id);
+    if (result) return result;
+  } catch (e) {
+    // Continue to try by URL ID if direct ID fails
+  }
+
+  // Then try by URL ID
+  return getMessagesByUrlId(db, id);
 }
 
 export async function getMessagesByUrlId(db: IDBDatabase, id: string): Promise<ChatHistoryItem> {
@@ -87,7 +111,13 @@ export async function getMessagesByUrlId(db: IDBDatabase, id: string): Promise<C
     const index = store.index('urlId');
     const request = index.get(id);
 
-    request.onsuccess = () => resolve(request.result as ChatHistoryItem);
+    request.onsuccess = () => {
+      if (!request.result) {
+        reject(new Error('Chat not found'));
+        return;
+      }
+      resolve(request.result);
+    };
     request.onerror = () => reject(request.error);
   });
 }
@@ -98,7 +128,13 @@ export async function getMessagesById(db: IDBDatabase, id: string): Promise<Chat
     const store = transaction.objectStore('chats');
     const request = store.get(id);
 
-    request.onsuccess = () => resolve(request.result as ChatHistoryItem);
+    request.onsuccess = () => {
+      if (!request.result) {
+        reject(new Error('Chat not found'));
+        return;
+      }
+      resolve(request.result);
+    };
     request.onerror = () => reject(request.error);
   });
 }
@@ -131,18 +167,24 @@ export async function getNextId(db: IDBDatabase): Promise<string> {
 
 export async function getUrlId(db: IDBDatabase, id: string): Promise<string> {
   const idList = await getUrlIds(db);
-
-  if (!idList.includes(id)) {
+  
+  // Filter out any null/undefined values and ensure we only check actual IDs
+  const existingIds = idList.filter(urlId => urlId != null);
+  
+  if (!existingIds.includes(id)) {
     return id;
-  } else {
-    let i = 2;
-
-    while (idList.includes(`${id}-${i}`)) {
-      i++;
-    }
-
-    return `${id}-${i}`;
   }
+  
+  // Find the next available number
+  let counter = 2;
+  let newId = `${id}-${counter}`;
+  
+  while (existingIds.includes(newId)) {
+    counter++;
+    newId = `${id}-${counter}`;
+  }
+  
+  return newId;
 }
 
 async function getUrlIds(db: IDBDatabase): Promise<string[]> {
@@ -157,7 +199,10 @@ async function getUrlIds(db: IDBDatabase): Promise<string[]> {
       const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
 
       if (cursor) {
-        idList.push(cursor.value.urlId);
+        // Only add valid urlIds to the list
+        if (cursor.value.urlId) {
+          idList.push(cursor.value.urlId);
+        }
         cursor.continue();
       } else {
         resolve(idList);
@@ -206,17 +251,17 @@ export async function createChatFromMessages(
   messages: Message[],
 ): Promise<string> {
   const newId = await getNextId(db);
-  const newUrlId = await getUrlId(db, newId); // Get a new urlId for the duplicated chat
+  const newUrlId = await getUrlId(db, newId);
 
   await setMessages(
     db,
-    newId,
     messages,
-    newUrlId, // Use the new urlId
-    description,
+    newId,
+    newUrlId,
+    description
   );
 
-  return newUrlId; // Return the urlId instead of id for navigation
+  return newUrlId;
 }
 
 export async function updateChatDescription(db: IDBDatabase, id: string, description: string): Promise<void> {
@@ -230,5 +275,5 @@ export async function updateChatDescription(db: IDBDatabase, id: string, descrip
     throw new Error('Description cannot be empty');
   }
 
-  await setMessages(db, id, chat.messages, chat.urlId, description, chat.timestamp);
+  await setMessages(db, chat.messages, id, chat.urlId, description);
 }
